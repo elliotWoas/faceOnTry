@@ -16,6 +16,7 @@ interface ResultPreviewProps {
   referenceImageUrl?: string | null;
   hairstyleName?: string;
   explanation?: string;
+  usedModel?: string;
   onReset: () => void;
 }
 
@@ -25,6 +26,7 @@ export const ResultPreview: React.FC<ResultPreviewProps> = ({
   referenceImageUrl,
   hairstyleName,
   explanation,
+  usedModel,
   onReset,
 }) => {
   const [copied, setCopied] = useState(false);
@@ -62,6 +64,11 @@ export const ResultPreview: React.FC<ResultPreviewProps> = ({
 
   return (
     <div className="w-full max-w-4xl mx-auto flex flex-col items-center animate-in fade-in duration-300">
+      {usedModel && (
+        <p className="w-full text-right text-xs text-zinc-500 mb-3">
+          Generated with {usedModel}
+        </p>
+      )}
       {/* Header with Mode 2 recommendation info if present */}
       {hairstyleName && (
         <div className="w-full bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent dark:from-amber-400/15 dark:via-amber-400/5 border border-amber-500/20 rounded-2xl p-5 mb-8 text-left">

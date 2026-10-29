@@ -25,6 +25,7 @@ export default function Home() {
   const [resultImage, setResultImage] = useState<string | null>(null);
   const [hairstyleName, setHairstyleName] = useState<string | undefined>();
   const [explanation, setExplanation] = useState<string | undefined>();
+  const [usedModel, setUsedModel] = useState<string | undefined>();
 
   // Fetch supported models and their configuration status
   useEffect(() => {
@@ -115,6 +116,7 @@ export default function Home() {
       setResultImage(data.imageUrl);
       setHairstyleName(data.hairstyleName);
       setExplanation(data.explanation);
+      setUsedModel(data.model);
     } catch (err: unknown) {
       const msg =
         err instanceof Error ? err.message : "Failed to generate hairstyle.";
@@ -131,6 +133,7 @@ export default function Home() {
     setResultImage(null);
     setHairstyleName(undefined);
     setExplanation(undefined);
+    setUsedModel(undefined);
     setError(null);
   };
 
@@ -268,7 +271,7 @@ export default function Home() {
                     {loadingStep}
                   </span>
                   <span className="text-[11px] text-zinc-400 mt-1">
-                    Takes approx. 10–30 seconds
+                    Detailed edits can take up to 2 minutes
                   </span>
                 </div>
               )}
@@ -284,6 +287,7 @@ export default function Home() {
             }
             hairstyleName={hairstyleName}
             explanation={explanation}
+            usedModel={usedModel}
             onReset={handleReset}
           />
         )}
