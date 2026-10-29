@@ -40,7 +40,7 @@ A simple, clean, production-ready web application for AI hairstyle editing built
 
 ### 1. Configure Environment Variables
 
-Create `.env.local` in the project root:
+Create `.env.local` in the project root. Never put API keys in client code:
 
 ```bash
 cp .env.example .env.local
@@ -74,6 +74,48 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Optimized AvalAI hair editing
+
+The **Auto (AvalAI image edit)** option uses the Python processor before and
+after the AvalAI call. Python detects one face and the hair, crops the target
+to a 1024 px square canvas and the reference to at most 768 px, and creates
+a transparent edit mask from the target hair. After editing, it composites
+only the expanded hair region over the original full-resolution photo. The
+reference photo is sent as a second image, never as the target mask.
+
+Install Python 3.10+ and the preprocessing dependencies, then download the two
+official MediaPipe model files once:
+
+```bash
+python -m venv .venv
+```
+
+Windows PowerShell:
+
+```powershell
+.venv\Scripts\python -m pip install -r python_service\requirements.txt
+.venv\Scripts\python python_service\download_models.py
+```
+
+macOS/Linux:
+
+```bash
+.venv/bin/python -m pip install -r python_service/requirements.txt
+.venv/bin/python python_service/download_models.py
+```
+
+Set `PYTHON_BIN` in `.env.local` if Python is not in `.venv`. The model files
+live in `python_service/models/` and are ignored by Git. On serverless hosting,
+ship the Python runtime and model assets separately or run this processor in a
+persistent service; a stock Node-only Next.js deployment cannot run Auto mode.
+
+The Auto model list comes from AvalAI `/v1/models` and includes only entries
+that advertise `/v1/images/edits`. By default it prioritizes GPT Image 2.5
+Sunburst, GPT Image 2.5 Flare, FLUX.2 Pro, GPT Image 2, then GPT Image 1.5.
+Override with `AVALAI_EDIT_MODEL_PRIORITY`. Model availability and actual
+per-request pricing must be checked against your account. An API failure may
+try the next available model; this can incur charges for more than one request.
 
 ---
 

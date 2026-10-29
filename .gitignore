@@ -32,3 +32,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+/python_service/models/
+/python_service/__pycache__/
+/.venv/
