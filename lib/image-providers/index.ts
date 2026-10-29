@@ -122,9 +122,9 @@ export function getSupportedModels(): ModelOption[] {
         id: "gpt-image-1.5",
         name: "GPT Image 1.5 (AvalAI - Guardrailed)",
         provider: "avalai",
-        description: "AvalAI.ir • Exceeds $0.04 limit (Auto-falls back to mini)",
+        description: "AvalAI.ir • Exceeds $0.10 limit (Auto-falls back to mini)",
         isConfigured: status.avalAi,
-        costEstimate: "~$0.070/img (Auto fallback)",
+        costEstimate: "~$0.100/img (Auto fallback)",
       },
       {
         id: "seedream-4-5-251128",
