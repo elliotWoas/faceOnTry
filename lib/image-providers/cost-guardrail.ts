@@ -56,8 +56,8 @@ export const MODEL_PRICING_TABLE: Record<string, ModelCostInfo> = {
 
   // Over-budget models (> $0.04 / $0.05) - must trigger fallback
   "gpt-image-1.5": {
-    estimatedCost: 0.07,
-    fallbackModel: "gpt-image-1-mini",
+    estimatedCost: 0.10,
+    fallbackModel: "qwen-image-edit-plus",
     category: "generation",
   },
   "gemini-3.1-flash-image": {

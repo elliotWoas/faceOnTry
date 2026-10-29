@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateHairEdit, HairEditMode, ProviderId } from "@/lib/image-providers";
+import { generateOptimizedHairEdit } from "@/lib/hair-pipeline/avalai";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120; // 2 minutes for AI image generation
@@ -98,7 +99,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate edit
-    const result = await generateHairEdit({
+    const result = model === "auto" || provider === "avalai" || (model?.startsWith("gpt-image-") && !provider)
+      ? await generateOptimizedHairEdit({ mode, userImage: userImageBuffer,
+          referenceImage: referenceImageBuffer, model: model || "auto" })
+      : await generateHairEdit({
       mode,
       userImage: userImageBuffer,
       userImageMime: userImageFile.type,
@@ -106,7 +110,7 @@ export async function POST(request: NextRequest) {
       referenceImageMime: referenceImageFile?.type,
       provider: provider || undefined,
       model: model || undefined,
-    });
+      });
 
     return NextResponse.json(result);
   } catch (err: unknown) {
