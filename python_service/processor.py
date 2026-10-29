@@ -46,21 +46,48 @@ def detect(image):
     analysis = image.copy()
     analysis.thumbnail((1536, 1536), Image.Resampling.LANCZOS)
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=np.asarray(analysis))
-    face_options = mp.tasks.vision.FaceLandmarkerOptions(
-        base_options=mp.tasks.BaseOptions(model_asset_path=str(face_path)), num_faces=2)
-    hair_options = mp.tasks.vision.ImageSegmenterOptions(
-        base_options=mp.tasks.BaseOptions(model_asset_path=str(hair_path)), output_category_mask=True)
-    with mp.tasks.vision.FaceLandmarker.create_from_options(face_options) as landmarker:
-        faces = landmarker.detect(mp_image).face_landmarks
+    global _LANDMARKER, _SEGMENTER
+    if _LANDMARKER is None:
+        face_options = mp.tasks.vision.FaceLandmarkerOptions(
+            base_options=mp.tasks.BaseOptions(model_asset_path=str(face_path)), num_faces=2)
+        _LANDMARKER = mp.tasks.vision.FaceLandmarker.create_from_options(face_options)
+    if _SEGMENTER is None:
+        hair_options = mp.tasks.vision.ImageSegmenterOptions(
+            base_options=mp.tasks.BaseOptions(model_asset_path=str(hair_path)), output_category_mask=True)
+        _SEGMENTER = mp.tasks.vision.ImageSegmenter.create_from_options(hair_options)
+    faces = _LANDMARKER.detect(mp_image).face_landmarks
     if len(faces) != 1:
         raise ValueError("Use a clear photo with exactly one visible face")
-    with mp.tasks.vision.ImageSegmenter.create_from_options(hair_options) as segmenter:
-        category = np.squeeze(segmenter.segment(mp_image).category_mask.numpy_view().copy())
+    category = np.squeeze(_SEGMENTER.segment(mp_image).category_mask.numpy_view().copy())
     mask = Image.fromarray((category == 1).astype(np.uint8) * 255, "L").resize(image.size, Image.Resampling.NEAREST)
     if mask.getbbox() is None:
         raise ValueError("Hair could not be detected in this image")
     points = [(round(p.x * image.width), round(p.y * image.height)) for p in faces[0]]
     return points, mask
+
+
+_LANDMARKER = None
+_SEGMENTER = None
+
+
+def align_reference_hair(reference_points, reference_hair, target_points, target_size):
+    """Map reference hair silhouette onto the target using eyes and chin."""
+    anchors = (33, 263, 152)
+    if min(len(reference_points), len(target_points)) <= max(anchors):
+        return Image.new("L", target_size, 0)
+    source = np.array([[*reference_points[i], 1] for i in anchors], dtype=float)
+    destination = np.array([target_points[i] for i in anchors], dtype=float)
+    try:
+        forward = np.linalg.solve(source, destination).T
+        affine = np.vstack([forward, [0, 0, 1]])
+        inverse = np.linalg.inv(affine)
+    except np.linalg.LinAlgError:
+        return Image.new("L", target_size, 0)
+    if not np.isfinite(inverse).all():
+        return Image.new("L", target_size, 0)
+    return reference_hair.transform(target_size, Image.Transform.AFFINE,
+                                    tuple(inverse[:2].ravel()),
+                                    resample=Image.Resampling.NEAREST, fillcolor=0)
 
 
 def crop_box(image, points, hair_mask, reference=False):
@@ -114,6 +141,14 @@ def editable_mask(size, points, hair, box):
 def prepare(payload):
     target = decode(payload["userImage"])
     points, hair = detect(target)
+    reference = None
+    ref_points = None
+    ref_hair = None
+    if payload.get("referenceImage"):
+        reference = decode(payload["referenceImage"])
+        ref_points, ref_hair = detect(reference)
+        aligned = align_reference_hair(ref_points, ref_hair, points, target.size)
+        hair = Image.fromarray(np.maximum(np.asarray(hair), np.asarray(aligned)).astype(np.uint8), "L")
     box = crop_box(target, points, hair)
     target_crop = scaled_crop(target, box, 1024, upscale=True)
     allowed_crop = editable_mask(target_crop.size, points, hair, box)
@@ -129,9 +164,7 @@ def prepare(payload):
     result = {"target": encode(canvas), "mask": encode(api_mask),
               "allowed": encode(allowed), "box": box, "size": canvas.size,
               "contentBox": [offset[0], offset[1], offset[0] + target_crop.width, offset[1] + target_crop.height]}
-    if payload.get("referenceImage"):
-        reference = decode(payload["referenceImage"])
-        ref_points, ref_hair = detect(reference)
+    if reference is not None and ref_points is not None and ref_hair is not None:
         ref_box = crop_box(reference, ref_points, ref_hair, reference=True)
         result["reference"] = encode(scaled_crop(reference, ref_box, 768))
     return result
