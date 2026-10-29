@@ -1,5 +1,7 @@
 # AI Hairstyle Try-On & Style Advisor (MVP)
 
+> Implementation status and exact next steps: [HANDOFF.md](HANDOFF.md).
+
 A simple, clean, production-ready web application for AI hairstyle editing built with **Next.js (App Router)**, **TypeScript**, and **Tailwind CSS**.
 
 ---
