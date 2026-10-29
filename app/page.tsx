@@ -35,9 +35,9 @@ export default function Home() {
           const data = await res.json();
           if (data.models && Array.isArray(data.models)) {
             setModels(data.models);
-            // Default to verified active model (qwen-image-edit-plus) or first configured
+            // Prefer the optimized AvalAI editing pipeline when available.
             const preferred = data.models.find(
-              (m: ModelOption) => m.id === "qwen-image-edit-plus" && m.isConfigured
+              (m: ModelOption) => m.id === "auto" && m.isConfigured
             );
             const firstConfigured =
               preferred || data.models.find((m: ModelOption) => m.isConfigured);
