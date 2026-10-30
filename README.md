@@ -2,22 +2,29 @@
 
 > Implementation status and exact next steps: [HANDOFF.md](HANDOFF.md).
 
-A simple, clean, production-ready web application for AI hairstyle editing built with **Next.js (App Router)**, **TypeScript**, and **Tailwind CSS**.
+A prototype web application for AI hairstyle editing built with **Next.js (App Router)**, **TypeScript**, and **Tailwind CSS**. The optimized AvalAI path still needs a successful live edit and visual quality checks before production use.
 
 ---
 
 ## Features
 
+V1 prioritizes **Try a Hairstyle**: upload one clear photo of yourself and one
+reference photo showing the hairstyle. The reference should show one visible
+face and the full hair shape; a similar camera angle gives the alignment step
+more useful information. You can replace the reference and try another style
+without re-uploading your own photo. The one-photo recommendation mode remains
+available as a secondary workflow.
+
 - **Mode 1 — Try a Hairstyle**:
   - Upload a selfie + a reference hairstyle image.
-  - Applies the reference haircut while strictly preserving the person's identity, facial contours, skin tone, background, and lighting.
+  - Applies the reference haircut while aiming to preserve the person's identity, facial contours, skin tone, background, and lighting.
 - **Mode 2 — Find My Best Hairstyle**:
   - Upload a selfie only.
   - Analyzes face shape, proportions, hairline, and hair texture to determine and generate the most flattering hairstyle.
   - Returns the recommended hairstyle name and rationale.
 - **Developer Model Selector**:
   - Quick-switch between supported AI engines.
-  - Displays instant configuration status (`Configured` vs `Not configured`).
+  - Displays provider configuration and live AvalAI catalog availability.
 - **Aspect-Ratio Preserved Image Handling**:
   - Client & server-side validation (JPG, JPEG, PNG, WEBP, max 10MB).
   - Clean side-by-side or focused result view with 1-click download.
@@ -112,12 +119,25 @@ live in `python_service/models/` and are ignored by Git. On serverless hosting,
 ship the Python runtime and model assets separately or run this processor in a
 persistent service; a stock Node-only Next.js deployment cannot run Auto mode.
 
-The Auto model list comes from AvalAI `/v1/models` and includes only entries
-that advertise `/v1/images/edits`. By default it prioritizes GPT Image 2.5
-Sunburst, GPT Image 2.5 Flare, FLUX.2 Pro, GPT Image 2, then GPT Image 1.5.
-Override with `AVALAI_EDIT_MODEL_PRIORITY`. Model availability and actual
-per-request pricing must be checked against your account. An API failure may
-try the next available model; this can incur charges for more than one request.
+The model selector loads **all models that your AvalAI account advertises for
+`/v1/images/edits`** from `/v1/models`. GPT Image and FLUX edit models are
+sorted near the top; `AVALAI_EDIT_MODEL_PRIORITY` changes that order. A
+catalog entry is marked available without entering manual cost estimates.
+Auto selects the first available documented GPT edit model. FLUX models can be
+selected explicitly when the live catalog advertises edits. FLUX.2 Pro is labeled
+unverified because [AvalAI's FLUX.2 Pro guide documents generation rather than
+edits](https://docs.avalai.ir/en/providers/bfl).
+
+Selecting an AvalAI model can incur a charge. GPT Image 2.5 uses
+`quality=medium`; [AvalAI documents variable input and output
+costs](https://docs.avalai.ir/en/api-reference/images). The old
+`AVALAI_EDIT_MAX_COST_USD` and `AVALAI_EDIT_ESTIMATED_COSTS_USD` settings are no
+longer used because a fixed preflight estimate cannot cap token-based image
+edits. Auto makes **one** paid edit request, with no automatic fallback. Each
+successful call logs the provider request ID and
+attempts to look up exact USD cost through [AvalAI's User API](https://docs.avalai.ir/en/api-reference/user).
+If the transaction has not posted yet, the log retains the request ID for
+later reconciliation. Keep server logs for cost auditing.
 
 ---
 
