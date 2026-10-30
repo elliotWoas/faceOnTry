@@ -35,21 +35,17 @@ export async function generateGenericHairEdit(
 
   const userBase64 = request.userImage.toString("base64");
   const userUri = `data:${request.userImageMime};base64,${userBase64}`;
+  const referenceUri = isMode1 && request.referenceImage
+    ? `data:${request.referenceImageMime || "image/jpeg"};base64,${request.referenceImage.toString("base64")}`
+    : undefined;
+  if (isMode1 && !referenceUri) throw new Error("Missing reference image for Try a hairstyle mode");
   const editEndpoint = `${normalizedBase}/images/edits`;
 
   // Try JSON-based images/edits (standard for AvalAI / modern proxies)
   try {
-    const jsonBody: Record<string, unknown> = {
-      model,
-      prompt,
-      image: userUri,
-    };
-    if (isMode1 && request.referenceImage) {
-      const refMime = request.referenceImageMime || "image/jpeg";
-      const refData = `data:${refMime};base64,${request.referenceImage.toString("base64")}`;
-      jsonBody.mask = refData;
-      jsonBody.reference_image = refData;
-    }
+    const jsonBody: Record<string, unknown> = isMode1
+      ? { model, prompt, images: [{ image_url: userUri }, { image_url: referenceUri }] }
+      : { model, prompt, image: userUri };
 
     const jsonRes = await fetch(editEndpoint, {
       method: "POST",
@@ -107,64 +103,66 @@ export async function generateGenericHairEdit(
     console.warn(`${name} JSON /images/edits failed:`, jsonErr);
   }
 
-  // If model is a generation model or in recommendation mode, try /images/generations
-  const genEndpoint = `${normalizedBase}/images/generations`;
-  try {
-    const genRes = await fetch(genEndpoint, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        prompt,
-      }),
-    });
+  // A text-only generation request cannot transfer a reference hairstyle.
+  if (!isMode1) {
+    const genEndpoint = `${normalizedBase}/images/generations`;
+    try {
+      const genRes = await fetch(genEndpoint, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          prompt,
+        }),
+      });
 
-    if (genRes.ok) {
-      const data = await genRes.json();
-      const first = data?.data?.[0];
-      let imageUrl: string | undefined;
+      if (genRes.ok) {
+        const data = await genRes.json();
+        const first = data?.data?.[0];
+        let imageUrl: string | undefined;
 
-      if (first?.b64_json) {
-        imageUrl = `data:image/png;base64,${first.b64_json}`;
-      } else if (first?.url) {
-        imageUrl = first.url;
-      }
-
-      if (imageUrl) {
-        return {
-          imageUrl,
-          hairstyleName: isMode1 ? undefined : "Recommended Hairstyle",
-          explanation: isMode1
-            ? undefined
-            : "Aesthetically tailored to flatter your facial contours, hairline, and hair texture.",
-        };
-      }
-    } else {
-      const errTxt = await genRes.text();
-      try {
-        const errJson = JSON.parse(errTxt);
-        if (
-          genRes.status === 429 ||
-          errTxt.includes("insufficient") ||
-          errTxt.includes("credit") ||
-          errTxt.includes("restricted")
-        ) {
-          throw new Error(`${name}: ${errJson.error?.message || errTxt}`);
+        if (first?.b64_json) {
+          imageUrl = `data:image/png;base64,${first.b64_json}`;
+        } else if (first?.url) {
+          imageUrl = first.url;
         }
-      } catch (parseErr) {
-        if (parseErr instanceof Error && parseErr.message.startsWith(`${name}:`)) {
-          throw parseErr;
+
+        if (imageUrl) {
+          return {
+            imageUrl,
+            hairstyleName: isMode1 ? undefined : "Recommended Hairstyle",
+            explanation: isMode1
+              ? undefined
+              : "Aesthetically tailored to flatter your facial contours, hairline, and hair texture.",
+          };
+        }
+      } else {
+        const errTxt = await genRes.text();
+        try {
+          const errJson = JSON.parse(errTxt);
+          if (
+            genRes.status === 429 ||
+            errTxt.includes("insufficient") ||
+            errTxt.includes("credit") ||
+            errTxt.includes("restricted")
+          ) {
+            throw new Error(`${name}: ${errJson.error?.message || errTxt}`);
+          }
+        } catch (parseErr) {
+          if (parseErr instanceof Error && parseErr.message.startsWith(`${name}:`)) {
+            throw parseErr;
+          }
         }
       }
+    } catch (genErr: unknown) {
+      if (genErr instanceof Error && genErr.message.startsWith(`${name}:`)) {
+        throw genErr;
+      }
+      console.warn(`${name} /images/generations failed:`, genErr);
     }
-  } catch (genErr: unknown) {
-    if (genErr instanceof Error && genErr.message.startsWith(`${name}:`)) {
-      throw genErr;
-    }
-    console.warn(`${name} /images/generations failed:`, genErr);
   }
 
   // Prepare FormData for standard multipart images/edits
@@ -172,7 +170,7 @@ export async function generateGenericHairEdit(
   const userBlob = new Blob([new Uint8Array(request.userImage)], {
     type: request.userImageMime,
   });
-  formData.append("image", userBlob, "user-photo.png");
+  formData.append(isMode1 ? "image[]" : "image", userBlob, "user-photo.png");
   formData.append("prompt", prompt);
   formData.append("model", model);
   formData.append("response_format", "b64_json");
@@ -181,7 +179,7 @@ export async function generateGenericHairEdit(
     const refBlob = new Blob([new Uint8Array(request.referenceImage)], {
       type: request.referenceImageMime || "image/jpeg",
     });
-    formData.append("mask", refBlob, "reference-photo.png");
+    formData.append("image[]", refBlob, "reference-photo.png");
   }
 
   try {
