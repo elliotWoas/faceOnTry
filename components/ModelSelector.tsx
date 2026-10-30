@@ -27,7 +27,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
       <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400 mb-1.5 px-1">
         <span className="font-medium flex items-center gap-1">
           <Cpu className="w-3.5 h-3.5 text-zinc-400" />
-          AI Engine (Developer Model Selector)
+          Editing model
         </span>
         {selectedModel && (
           <span className="text-[11px] text-zinc-400">
@@ -53,7 +53,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
             {selectedModel?.isConfigured ? (
               <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/40">
                 <CheckCircle2 className="w-3 h-3" />
-                Configured
+                {selectedModel.provider === "avalai" ? "Available" : "Configured"}
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/40">
@@ -76,7 +76,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
               className="fixed inset-0 z-20"
               onClick={() => setIsOpen(false)}
             />
-            <div className="absolute top-full left-0 right-0 mt-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-lg z-30 overflow-hidden divide-y divide-zinc-100 dark:divide-zinc-800/60">
+            <div className="absolute top-full left-0 right-0 mt-1.5 max-h-[420px] overflow-y-auto bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-lg z-30 divide-y divide-zinc-100 dark:divide-zinc-800/60">
               {models.map((model) => {
                 const isCurrent = model.id === selectedModelId;
                 return (
@@ -111,7 +111,7 @@ export const ModelSelector: React.FC<ModelSelectorProps> = ({
                       {model.isConfigured ? (
                         <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                           <CheckCircle2 className="w-3 h-3" />
-                          Configured
+                          {model.provider === "avalai" ? "Available" : "Configured"}
                         </span>
                       ) : (
                         <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1">

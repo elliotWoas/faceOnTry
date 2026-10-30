@@ -5,9 +5,6 @@ import {
   Download,
   RotateCcw,
   Sparkles,
-  ArrowRightLeft,
-  Check,
-  ExternalLink,
 } from "lucide-react";
 
 interface ResultPreviewProps {
@@ -123,7 +120,7 @@ export const ResultPreview: React.FC<ResultPreviewProps> = ({
       {viewMode === "side-by-side" ? (
         <div
           className={`w-full grid gap-4 ${
-            referenceImageUrl ? "grid-cols-1 md:grid-cols-3" : "grid-cols-1 md:grid-cols-2"
+            referenceImageUrl ? "grid-cols-1 md:grid-cols-4" : "grid-cols-1 md:grid-cols-2"
           }`}
         >
           {/* Original user photo */}
@@ -159,7 +156,7 @@ export const ResultPreview: React.FC<ResultPreviewProps> = ({
           )}
 
           {/* Generated Result */}
-          <div className="flex flex-col items-center bg-zinc-50 dark:bg-zinc-900/60 border-2 border-emerald-500/40 dark:border-emerald-500/30 rounded-2xl p-3 shadow-xs">
+          <div className={`order-first md:order-last flex flex-col items-center bg-zinc-50 dark:bg-zinc-900/60 border-2 border-emerald-500/40 dark:border-emerald-500/30 rounded-2xl p-3 shadow-xs ${referenceImageUrl ? "md:col-span-2" : ""}`}>
             <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mb-2 flex items-center gap-1">
               <Sparkles className="w-3.5 h-3.5" />
               New Hairstyle
@@ -209,7 +206,7 @@ export const ResultPreview: React.FC<ResultPreviewProps> = ({
           className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 font-medium text-sm hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors shadow-xs cursor-pointer"
         >
           <RotateCcw className="w-4 h-4" />
-          Try Again
+          {referenceImageUrl ? "Try Another Reference" : "Try Again"}
         </button>
       </div>
     </div>
