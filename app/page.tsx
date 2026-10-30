@@ -17,6 +17,7 @@ export default function Home() {
 
   const [models, setModels] = useState<ModelOption[]>([]);
   const [selectedModelId, setSelectedModelId] = useState<string>("");
+  const [modelLoadError, setModelLoadError] = useState<string | null>(null);
 
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState<string>("");
@@ -26,6 +27,14 @@ export default function Home() {
   const [hairstyleName, setHairstyleName] = useState<string | undefined>();
   const [explanation, setExplanation] = useState<string | undefined>();
   const [usedModel, setUsedModel] = useState<string | undefined>();
+
+  useEffect(() => () => {
+    if (userPreview) URL.revokeObjectURL(userPreview);
+  }, [userPreview]);
+
+  useEffect(() => () => {
+    if (referencePreview) URL.revokeObjectURL(referencePreview);
+  }, [referencePreview]);
 
   // Fetch supported models and their configuration status
   useEffect(() => {
@@ -45,10 +54,17 @@ export default function Home() {
             setSelectedModelId(
               firstConfigured ? firstConfigured.id : data.models[0]?.id || ""
             );
+            if (!firstConfigured) setModelLoadError("No editing model is configured yet. Add a provider key to continue.");
+            else setModelLoadError(null);
+          } else {
+            setModelLoadError("Editing models could not be loaded. Refresh the page to try again.");
           }
+        } else {
+          setModelLoadError("Editing models could not be loaded. Refresh the page to try again.");
         }
       } catch (e) {
         console.error("Failed to load models:", e);
+        setModelLoadError("Editing models could not be loaded. Refresh the page to try again.");
       }
     }
     loadModels();
@@ -66,6 +82,11 @@ export default function Home() {
 
     if (mode === "try-hairstyle" && !referenceFile) {
       setError("Please upload a reference hairstyle image.");
+      return;
+    }
+    const selectedModel = models.find((item) => item.id === selectedModelId);
+    if (!selectedModel?.isConfigured) {
+      setError("Select a configured editing model before generating.");
       return;
     }
 
@@ -100,6 +121,7 @@ export default function Home() {
 
       if (selectedModelId) {
         formData.append("model", selectedModelId);
+        formData.append("provider", selectedModel.provider);
       }
 
       const res = await fetch("/api/generate", {
@@ -137,10 +159,11 @@ export default function Home() {
     setError(null);
   };
 
+  const selectedModel = models.find((item) => item.id === selectedModelId);
   const isFormValid =
     mode === "try-hairstyle"
-      ? Boolean(userFile && referenceFile)
-      : Boolean(userFile);
+      ? Boolean(userFile && referenceFile && selectedModel?.isConfigured)
+      : Boolean(userFile && selectedModel?.isConfigured);
 
   return (
     <main className="flex-1 flex flex-col items-center justify-between py-10 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto w-full">
@@ -156,20 +179,10 @@ export default function Home() {
             Realistic Hairstyle Editor
           </h1>
           <p className="mt-2 text-sm sm:text-base text-zinc-600 dark:text-zinc-400 max-w-lg mx-auto">
-            Try any haircut with photorealistic accuracy while preserving 100% of
-            your face and identity.
+            Preview a haircut from a reference photo while keeping your face
+            and background as consistent as possible.
           </p>
         </header>
-
-        {/* Developer Model Selector */}
-        {models.length > 0 && (
-          <ModelSelector
-            models={models}
-            selectedModelId={selectedModelId}
-            onModelSelect={setSelectedModelId}
-            disabled={isLoading}
-          />
-        )}
 
         {/* Main Content Area */}
         {!resultImage ? (
@@ -204,8 +217,8 @@ export default function Home() {
               {/* User photo upload */}
               <ImageUploader
                 id="user-selfie"
-                label="1. Your Photo (Selfie)"
-                sublabel="Clear front-facing photo with visible hairline"
+                label="1. Your Photo"
+                sublabel="One visible face, clear hairline, good lighting"
                 file={userFile}
                 previewUrl={userPreview}
                 onFileSelect={(f, url) => {
@@ -221,7 +234,7 @@ export default function Home() {
                 <ImageUploader
                   id="hair-reference"
                   label="2. Hairstyle Reference"
-                  sublabel="Photo of the haircut or hairstyle you want to try"
+                  sublabel="One visible face and full hairstyle; a similar angle works best"
                   file={referenceFile}
                   previewUrl={referencePreview}
                   onFileSelect={(f, url) => {
@@ -231,6 +244,28 @@ export default function Home() {
                   disabled={isLoading}
                   required
                 />
+              )}
+            </div>
+
+            {mode === "try-hairstyle" && (
+              <p className="max-w-2xl mx-auto mt-3 text-xs text-zinc-500 dark:text-zinc-400">
+                The reference supplies the haircut, length, texture, and color. Your face and background come from your photo.
+              </p>
+            )}
+
+            <div className="w-full max-w-xl mx-auto mt-7">
+              {models.length > 0 && (
+                <ModelSelector
+                  models={models}
+                  selectedModelId={selectedModelId}
+                  onModelSelect={setSelectedModelId}
+                  disabled={isLoading}
+                />
+              )}
+              {modelLoadError && (
+                <p className="text-sm text-amber-700 dark:text-amber-300 text-center" role="status">
+                  {modelLoadError}
+                </p>
               )}
             </div>
 

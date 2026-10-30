@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "AI Hairstyle Try-On & Style Advisor",
   description:
-    "Try any hairstyle from a reference photo or discover your ideal hairstyle with AI face shape analysis. 100% face and identity preservation.",
+    "Preview hairstyles from a reference photo or explore a style recommendation with AI-assisted editing.",
 };
 
 export default function RootLayout({
