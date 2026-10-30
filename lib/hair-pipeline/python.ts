@@ -14,7 +14,7 @@ export interface PreparedImage {
 
 export async function runImageProcessor<T>(payload: Record<string, unknown>): Promise<T> {
   const localPython = path.join(process.cwd(), ".venv", process.platform === "win32" ? "Scripts/python.exe" : "bin/python");
-  const python = process.env.PYTHON_BIN || (existsSync(localPython) ? localPython : "python");
+  const python = process.env.PYTHON_BIN || (existsSync(localPython) ? localPython : process.platform === "win32" ? "python" : "python3");
   const script = path.join(process.cwd(), "python_service", "processor.py");
   return new Promise<T>((resolve, reject) => {
     const child = spawn(python, [script], { stdio: ["pipe", "pipe", "pipe"] });
@@ -32,12 +32,17 @@ export async function runImageProcessor<T>(payload: Record<string, unknown>): Pr
     });
     child.on("close", (code) => {
       clearTimeout(timer);
+      if (code !== 0 && !output.trim()) {
+        const errorText = errors.trim() || `Python process exited with code ${code}`;
+        return reject(new Error(errorText));
+      }
       try {
         const result = JSON.parse(output) as T & { ok: boolean; error?: string };
         if (code !== 0 || !result.ok) throw new Error(result.error || errors || "Python image processing failed");
         resolve(result);
       } catch (error) {
-        reject(error instanceof Error ? error : new Error("Invalid Python processor response"));
+        const fallbackMsg = errors.trim() ? errors.trim() : (error instanceof Error ? error.message : "Invalid Python processor response");
+        reject(new Error(fallbackMsg));
       }
     });
     child.stdin.end(JSON.stringify(payload));

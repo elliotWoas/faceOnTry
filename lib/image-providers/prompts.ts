@@ -1,14 +1,10 @@
-export const MODE_1_BASE_PROMPT = `Apply the exact hairstyle from the reference image to the person in the target image.
+export const MODE_1_BASE_PROMPT = `Create one photorealistic edit of Image 1: the same person, pose, framing, clothing, background, and scene lighting, now wearing the hairstyle shown in Image 2.
 
-Strictly preserve the target person’s complete identity and facial appearance. Do not modify the face, eyes, eyebrows, nose, lips, ears, skin tone, skin texture, facial structure, proportions, age, expression, body, clothing, background, lighting, camera angle, or composition in any way.
+Image 1 is the target portrait and the source of identity and everything outside the hair. Image 2 is a hairstyle reference only. Transfer the recognizable hair cut and silhouette, length, parting, fringe, layers, volume, curl or wave pattern, texture, and visible hair color. Do not copy the reference person's face, skin, head shape, pose, accessories, clothing, or background.
 
-Change only the hair and hairstyle.
+Fit the reference hairstyle naturally to the target person's head size, hairline, camera angle, and perspective. Match the target photo's light direction, shadows, and photographic texture. Render believable roots, strands, and edges. If a reference detail is hidden or unclear, infer only what is needed for a natural result.
 
-Use the reference image solely as a guide for hairstyle, haircut, hair length, color, texture, volume, shape, parting, and styling details.
-
-Do not transfer or influence the reference person’s face, identity, skin, body, or any other features.
-
-The final result must be photorealistic, with the new hair seamlessly and naturally integrated into the original image, matching the original lighting and perspective.`
+Keep the target's facial anatomy, expression, age, body, clothing, and background unchanged. Hair may naturally overlap the forehead or ears, but do not redraw the visible face, ears, or skin. Change only the hair and the small edge or shadow transitions needed to attach it naturally. Keep the target head in the same position and at the same scale. Return one image with the same composition, without a collage, text, or extra people.`
 
 export const MODE_2_BASE_PROMPT = `Analyze the person's face shape, facial proportions, current hair characteristics, hairline, hair texture, and overall appearance.
 

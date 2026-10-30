@@ -20,9 +20,7 @@ export function getProviderStatus(): ProviderStatus {
     nineRouter: Boolean(
       process.env.NINE_ROUTER_API_KEY && process.env.NINE_ROUTER_BASE_URL
     ),
-    avalAi: Boolean(
-      process.env.AVALAI_API_KEY && process.env.AVALAI_BASE_URL
-    ),
+    avalAi: Boolean(process.env.AVALAI_API_KEY),
   };
 }
 
