@@ -30,6 +30,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
         >
           <Scissors className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           <span>Try a hairstyle</span>
+          <span className="hidden sm:inline text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">V1 focus</span>
         </button>
 
         <button
@@ -49,7 +50,7 @@ export const ModeSelector: React.FC<ModeSelectorProps> = ({
 
       <p className="text-center text-xs text-zinc-500 dark:text-zinc-400 mt-3 font-normal">
         {currentMode === "try-hairstyle"
-          ? "Upload your photo + a reference hairstyle. AI transfers the style while preserving your face & identity."
+          ? "Upload your photo and a reference with one clearly visible face each. The reference guides the hair only."
           : "Upload only your photo. AI analyzes your face shape and proportions to style the most flattering look."}
       </p>
     </div>

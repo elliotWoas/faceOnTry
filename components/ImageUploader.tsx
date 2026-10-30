@@ -80,13 +80,11 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
     if (e.target.files && e.target.files[0]) {
       processFile(e.target.files[0]);
     }
+    e.target.value = "";
   };
 
   const handleRemove = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-    }
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -146,14 +144,25 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
               <span className="truncate max-w-[200px]">
                 {file ? file.name : "Selected image"}
               </span>
-              <button
-                type="button"
-                onClick={handleRemove}
-                className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 hover:underline font-medium cursor-pointer"
-              >
-                <X className="w-3.5 h-3.5" />
-                Remove
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={disabled}
+                  className="font-medium text-zinc-700 dark:text-zinc-300 hover:underline cursor-pointer"
+                >
+                  Replace
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRemove}
+                  disabled={disabled}
+                  className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 hover:underline font-medium cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  Remove
+                </button>
+              </div>
             </div>
           </div>
         ) : (
