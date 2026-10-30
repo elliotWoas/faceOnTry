@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupportedModels, getProviderStatus } from "@/lib/image-providers";
-import { getAvalaiEditModels } from "@/lib/hair-pipeline/avalai";
+import { getAvalaiEditModels, isAutoAvalaiEditModel } from "@/lib/hair-pipeline/avalai";
 import { ModelOption } from "@/lib/image-providers/types";
 
 export const dynamic = "force-dynamic";
@@ -14,8 +14,8 @@ export async function GET() {
       console.warn("AvalAI model discovery unavailable:", error);
     }
     const models = [
-      ...(avalaiModels.length ? [{ id: "auto", name: "Auto (AvalAI image edit)",
-        provider: "avalai" as const, description: "Select the highest-priority available edit model",
+      ...(avalaiModels.some((model) => isAutoAvalaiEditModel(model.id)) ? [{ id: "auto", name: "Auto (AvalAI image edit)",
+        provider: "avalai" as const, description: "Select the highest-priority documented GPT edit model",
         isConfigured: true, costEstimate: "Varies by model" }] : []),
       ...avalaiModels,
       ...getSupportedModels().filter((model) => model.provider !== "avalai"),

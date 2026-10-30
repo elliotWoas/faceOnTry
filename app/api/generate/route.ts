@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateHairEdit, HairEditMode, ProviderId } from "@/lib/image-providers";
-import { generateOptimizedHairEdit } from "@/lib/hair-pipeline/avalai";
+import { generateHairEdit, getSupportedModels, HairEditMode, ProviderId } from "@/lib/image-providers";
+import { generateOptimizedHairEdit, getAvalaiEditModels, isAutoAvalaiEditModel } from "@/lib/hair-pipeline/avalai";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120; // 2 minutes for AI image generation
@@ -29,6 +29,9 @@ export async function POST(request: NextRequest) {
         { error: "Invalid mode. Must be 'try-hairstyle' or 'recommend-hairstyle'." },
         { status: 400 }
       );
+    }
+    if (mode === "try-hairstyle" && !model) {
+      return NextResponse.json({ error: "Select an editing model before trying a reference hairstyle" }, { status: 400 });
     }
 
     // Validate user image presence
@@ -90,6 +93,22 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const legacyModels = getSupportedModels().filter((item) => item.provider !== "avalai");
+    const avalaiModels = model && legacyModels.some((item) => item.id === model)
+      ? [] : await getAvalaiEditModels();
+    const selectableModels = [
+      ...(avalaiModels.some((item) => isAutoAvalaiEditModel(item.id)) ? [{ id: "auto", provider: "avalai" as const }] : []),
+      ...avalaiModels,
+      ...legacyModels,
+    ];
+    const selected = model ? selectableModels.find((item) => item.id === model) : undefined;
+    if (model && !selected) {
+      return NextResponse.json({ error: "Selected model is unavailable" }, { status: 400 });
+    }
+    if (provider && (!selected || provider !== selected.provider)) {
+      return NextResponse.json({ error: "Provider does not match the selected model" }, { status: 400 });
+    }
+
     // Convert Files to Buffers (in-memory processing, no permanent disk storage)
     const userImageBuffer = Buffer.from(await userImageFile.arrayBuffer());
     let referenceImageBuffer: Buffer | undefined;
@@ -99,18 +118,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate edit
-    const result = model === "auto" || provider === "avalai" || (model?.startsWith("gpt-image-") && !provider)
-      ? await generateOptimizedHairEdit({ mode, userImage: userImageBuffer,
-          referenceImage: referenceImageBuffer, model: model || "auto" })
+    const result = selected?.provider === "avalai"
+      ? await generateOptimizedHairEdit({
+          mode,
+          userImage: userImageBuffer,
+          referenceImage: referenceImageBuffer,
+          model: model || "auto",
+        })
       : await generateHairEdit({
-      mode,
-      userImage: userImageBuffer,
-      userImageMime: userImageFile.type,
-      referenceImage: referenceImageBuffer,
-      referenceImageMime: referenceImageFile?.type,
-      provider: provider || undefined,
-      model: model || undefined,
-      });
+          mode,
+          userImage: userImageBuffer,
+          userImageMime: userImageFile.type,
+          referenceImage: referenceImageBuffer,
+          referenceImageMime: referenceImageFile?.type,
+          provider: provider || undefined,
+          model: model || undefined,
+        });
 
     return NextResponse.json(result);
   } catch (err: unknown) {
@@ -122,7 +145,12 @@ export async function POST(request: NextRequest) {
     let clientError = "Generation failed";
     let status = 500;
 
-    if (errorMsg.includes("not configured")) {
+    if (errorMsg.startsWith("Python processor unavailable") ||
+        errorMsg.includes("Install python_service/requirements.txt") ||
+        errorMsg.includes("Run python python_service/download_models.py")) {
+      clientError = errorMsg;
+      status = 503;
+    } else if (errorMsg.includes("not configured")) {
       clientError = errorMsg;
       status = 400;
     } else if (errorMsg.includes("not found") || errorMsg.includes("inaccessible")) {
