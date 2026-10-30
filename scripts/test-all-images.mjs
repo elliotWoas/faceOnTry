@@ -54,7 +54,7 @@ async function testGemini() {
 // 2. Test AvalAI
 async function testAvalAI() {
   console.log("\n2️⃣ [AvalAI.ir (Qwen Image & Edit)]");
-  const key = "aa-Hv3ZYdwBueT0IeU5cM0S4V0Lrl2GvhyyoUjRVeoYNOWw2oNA";
+  const key = process.env.AVALAI_API_KEY;
   const url = "https://api.avalai.ir/v1";
   console.log(`   • Base URL: ${url}`);
   console.log("   • Model: qwen-image-edit");
@@ -95,7 +95,7 @@ async function testAvalAI() {
 // 3. Test 9Router
 async function testNineRouter() {
   console.log("\n3️⃣ [9Router]");
-  const key = "sk-b88d63dd361c4e78-2pqwv0-16bc8668";
+  const key = process.env.NINE_ROUTER_API_KEY;
   const localUrl = "http://localhost:20128/v1";
   console.log(`   • Detected running locally at: ${localUrl}`);
 

@@ -1,5 +1,5 @@
-const AVALAI_KEY = "aa-Hv3ZYdwBueT0IeU5cM0S4V0Lrl2GvhyyoUjRVeoYNOWw2oNA";
-const NINE_ROUTER_KEY = "sk-b88d63dd361c4e78-2pqwv0-16bc8668";
+const AVALAI_KEY = process.env.AVALAI_API_KEY;
+const NINE_ROUTER_KEY = process.env.NINE_ROUTER_API_KEY;
 
 async function testAvalAIQwen() {
   console.log("--- Testing AvalAI qwen-image format ---");
