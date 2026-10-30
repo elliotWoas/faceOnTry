@@ -43,6 +43,26 @@ class ProcessorTest(unittest.TestCase):
         self.assertEqual(decode(result["mask"]).size, (1024, 1024))
         self.assertGreater(result["contentBox"][2] - result["contentBox"][0], 0)
 
+    def test_reference_hair_expands_edit_area_for_longer_style(self):
+        photo = Image.new("RGB", (400, 400), "gray")
+        target_hair = Image.new("L", photo.size, 0)
+        reference_hair = Image.new("L", photo.size, 0)
+        ImageDraw.Draw(target_hair).rectangle((155, 70, 245, 125), fill=255)
+        ImageDraw.Draw(reference_hair).rectangle((120, 50, 280, 230), fill=255)
+        points = [(200, 200)] * 468
+        points[33], points[263], points[152] = (160, 160), (240, 160), (200, 300)
+        with patch("processor.detect", side_effect=[
+            (points, target_hair), (points, reference_hair),
+        ]):
+            result = prepare({"userImage": encode(photo), "referenceImage": encode(photo)})
+
+        box = result["box"]
+        content = result["contentBox"]
+        allowed = decode(result["allowed"]).convert("L")
+        x = round(content[0] + (130 - box[0]) * (content[2] - content[0]) / (box[2] - box[0]))
+        y = round(content[1] + (180 - box[1]) * (content[3] - content[1]) / (box[3] - box[1]))
+        self.assertGreater(allowed.getpixel((x, y)), 0)
+
 
 if __name__ == "__main__":
     unittest.main()
